@@ -3,3 +3,4 @@ name = "tone"
 version = "0.0.2"
 
 [dependencies]
+hound = "~1.1.0"
