@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
 
+// An initial oscillator table
+// This should be long-lived: it's doing all the computation up front.
 pub struct NCOTable {
     pub bits: usize,
     pub fractional: usize,
@@ -7,14 +9,16 @@ pub struct NCOTable {
     samples: Vec<f32>,
 }
 
+// Here's your numerically-controlled oscillator.
 struct NCO<'a> {
-    index: usize,
+    pub index: usize,
     pub step: usize,
     table: &'a NCOTable,
 }
 
 // A trait to get a new oscillator.
-// This either gets one from a table, or alters an existing oscillator with a new frequency
+// This either gets one from a table, or alters an existing oscillator with a new frequency.
+// Which is kinda handy if you want to hang on to phase.
 pub trait NCOStep<'a> {
     fn step(&'a self, step:usize) -> NCO<'a>;
     fn freq(&'a self, freq:f32) -> NCO<'a>;
