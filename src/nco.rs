@@ -16,15 +16,7 @@ struct NCO<'a> {
     table: &'a NCOTable,
 }
 
-// A trait to get a new oscillator.
-// This either gets one from a table, or alters an existing oscillator with a new frequency.
-// Which is kinda handy if you want to hang on to phase.
-pub trait NCOStep<'a> {
-    fn step(&'a self, step:usize) -> NCO<'a>;
-    fn freq(&'a self, freq:f32) -> NCO<'a>;
-}
-
-impl NCOTable {
+impl<'a> NCOTable {
     // fundamental - the sample rate, effectively. eg 44100Hz.
     // bits - resolution of the lookup table
     // fractional - allow for tinier steps
@@ -48,10 +40,9 @@ impl NCOTable {
     pub fn steps_for_freq(&self, freq: f32) -> usize {
         ((1 << (self.bits + self.fractional)) as f32 * (freq / self.fundamental)).floor() as usize
     }
-}
 
-impl<'a> NCOStep<'a> for NCOTable {
-    fn step(&'a self, step: usize) -> NCO<'a> {
+    #[allow(dead_code)]
+    pub fn step(&'a self, step: usize) -> NCO<'a> {
         NCO {
             index: 0,
             step: step,
@@ -59,7 +50,8 @@ impl<'a> NCOStep<'a> for NCOTable {
         }
     }
 
-    fn freq(&'a self, freq: f32) -> NCO<'a> {
+    #[allow(dead_code)]
+    pub fn freq(&'a self, freq: f32) -> NCO<'a> {
         let step = self.steps_for_freq(freq);
         NCO {
             index: 0,
@@ -69,22 +61,13 @@ impl<'a> NCOStep<'a> for NCOTable {
     }
 }
 
-impl<'a> NCOStep<'a> for NCO<'a> {
-    fn step(&self, step: usize) -> NCO<'a> {
-        NCO {
-            index: self.index,
-            step: step,
-            table: self.table,
-        }
+impl<'a> NCO<'a> {
+    pub fn set_step(&mut self, step: usize) {
+        self.step = step;
     }
 
-    fn freq(&self, freq: f32) -> NCO<'a> {
-        let step = self.table.steps_for_freq(freq).clone();
-        NCO {
-            index: 0,
-            step: step,
-            table: self.table,
-        }
+    pub fn set_freq(&mut self, freq: f32) {
+        self.set_step(self.table.steps_for_freq(freq).clone());
     }
 }
 
