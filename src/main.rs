@@ -14,12 +14,12 @@ fn main() {
     let steps = osc.step;
     let size = 1 << (nco.bits + nco.fractional);
     println!("S: {} of {}", steps, size);
-    for i in (0 .. 20) {
+    for _ in (0 .. 20) {
         println!("V: {}", osc.next().unwrap());
     }
     let mut osc2 = osc.freq(DETECT * 0.25);
     println!("S: {} of {}", osc2.step, size);
-    for i in (0 .. 20) {
+    for _ in (0 .. 20) {
         println!("V2: {}", osc2.next().unwrap());
     }
 }
