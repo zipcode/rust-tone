@@ -105,3 +105,13 @@ impl<'a> Iterator for NCO<'a> {
         Some(result)
     }
 }
+
+impl<'a> Clone for NCO<'a> {
+    fn clone(&self) -> NCO<'a> {
+        NCO {
+            index: self.index,
+            step: self.step,
+            table: self.table,
+        }
+    }
+}

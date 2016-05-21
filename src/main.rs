@@ -2,18 +2,31 @@ extern crate hound;
 
 mod nco;
 
-use std::f32::consts::PI;
 use nco::NCOTable;
+use std::i16;
 
 const DETECT: f32 = 1500.0;
 const FUNDAMENTAL: f32 = 11025.0;
 
 fn main() {
     let nco = NCOTable::new(FUNDAMENTAL, 16, 2);
-    let mut osc = nco.freq(DETECT);
-    println!("Index: {}", osc.index);
-    osc.shift_phase(-1.0*PI);
-    println!("Index: {}", osc.index);
-    osc.set_phase(3.0*PI);
-    println!("Index: {}", osc.index);
+    let mut osc = nco.freq(DETECT - (170.0/2.0));
+
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: FUNDAMENTAL as u32,
+        bits_per_sample: 16,
+    };
+    let mut writer = hound::WavWriter::create("sine.wav", spec).unwrap();
+    for _ in (0 .. (FUNDAMENTAL as usize)) {
+        let amp = i16::MAX as f32;
+        let sample = osc.next().unwrap();
+        writer.write_sample((sample * amp) as i16).unwrap();
+    }
+    osc.set_freq(DETECT + (170.0 / 2.0));
+    for _ in (0 .. (FUNDAMENTAL as usize)) {
+        let amp = i16::MAX as f32;
+        let sample = osc.next().unwrap();
+        writer.write_sample((sample * amp) as i16).unwrap();
+    }
 }
