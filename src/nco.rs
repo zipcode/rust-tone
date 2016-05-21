@@ -7,6 +7,19 @@ pub struct NCOTable {
     samples: Vec<f32>,
 }
 
+struct NCO<'a> {
+    index: usize,
+    pub step: usize,
+    table: &'a NCOTable,
+}
+
+// A trait to get a new oscillator.
+// This either gets one from a table, or alters an existing oscillator with a new frequency
+pub trait NCOStep<'a> {
+    fn step(&'a self, step:usize) -> NCO<'a>;
+    fn freq(&'a self, freq:f32) -> NCO<'a>;
+}
+
 impl NCOTable {
     // fundamental - the sample rate, effectively. eg 44100Hz.
     // bits - resolution of the lookup table
@@ -52,12 +65,6 @@ impl<'a> NCOStep<'a> for NCOTable {
     }
 }
 
-struct NCO<'a> {
-    index: usize,
-    pub step: usize,
-    table: &'a NCOTable,
-}
-
 impl<'a> NCOStep<'a> for NCO<'a> {
     fn step(&self, step: usize) -> NCO<'a> {
         NCO {
@@ -75,11 +82,6 @@ impl<'a> NCOStep<'a> for NCO<'a> {
             table: self.table,
         }
     }
-}
-
-pub trait NCOStep<'a> {
-    fn step(&'a self, step:usize) -> NCO<'a>;
-    fn freq(&'a self, freq:f32) -> NCO<'a>;
 }
 
 impl<'a> Iterator for NCO<'a> {
