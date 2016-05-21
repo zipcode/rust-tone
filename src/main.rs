@@ -2,14 +2,14 @@ extern crate hound;
 
 mod nco;
 
-use nco::NCO;
+use nco::NCOTable;
 use nco::NCOStep;
 
 const DETECT: f32 = 1500.0;
 const FUNDAMENTAL: f32 = 11025.0;
 
 fn main() {
-    let nco = NCO::new(FUNDAMENTAL, 16, 2);
+    let nco = NCOTable::new(FUNDAMENTAL, 16, 2);
     let mut osc = nco.freq(DETECT);
     let steps = osc.step;
     let size = 1 << (nco.bits + nco.fractional);

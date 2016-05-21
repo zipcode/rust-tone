@@ -1,13 +1,13 @@
 use std::f32::consts::PI;
 
-pub struct NCO {
+pub struct NCOTable {
     pub bits: usize,
     pub fractional: usize,
     pub fundamental: f32,
     samples: Vec<f32>,
 }
 
-impl NCO {
+impl NCOTable {
     // fundamental - the sample rate, effectively. eg 44100Hz.
     // bits - resolution of the lookup table
     // fractional - allow for tinier steps
@@ -16,9 +16,9 @@ impl NCO {
     // only oscillate at 1, 1/2, 1/3, 1/4 of the (1<<8) entries.
     // fractional resolution lets you get closer to other values.
     #[allow(dead_code)]
-    pub fn new(fundamental: f32, bits: usize, fractional: usize) -> NCO {
+    pub fn new(fundamental: f32, bits: usize, fractional: usize) -> NCOTable {
         let max = 1 << bits;
-        NCO {
+        NCOTable {
             bits: bits,
             fractional: fractional,
             fundamental: fundamental,
@@ -33,60 +33,60 @@ impl NCO {
     }
 }
 
-impl<'a> NCOStep<'a> for NCO {
-    fn step(&'a self, step: usize) -> NCOIterator<'a> {
-        NCOIterator {
+impl<'a> NCOStep<'a> for NCOTable {
+    fn step(&'a self, step: usize) -> NCO<'a> {
+        NCO {
             index: 0,
             step: step,
-            nco: &self,
+            table: &self,
         }
     }
 
-    fn freq(&'a self, freq: f32) -> NCOIterator<'a> {
+    fn freq(&'a self, freq: f32) -> NCO<'a> {
         let step = self.steps_for_freq(freq);
-        NCOIterator {
+        NCO {
             index: 0,
             step: step,
-            nco: &self,
+            table: &self,
         }
     }
 }
 
-struct NCOIterator<'a> {
+struct NCO<'a> {
     index: usize,
     pub step: usize,
-    pub nco: &'a NCO,
+    table: &'a NCOTable,
 }
 
-impl<'a> NCOStep<'a> for NCOIterator<'a> {
-    fn step(&self, step: usize) -> NCOIterator<'a> {
-        NCOIterator {
+impl<'a> NCOStep<'a> for NCO<'a> {
+    fn step(&self, step: usize) -> NCO<'a> {
+        NCO {
             index: self.index,
             step: step,
-            nco: self.nco,
+            table: self.table,
         }
     }
 
-    fn freq(&self, freq: f32) -> NCOIterator<'a> {
-        let step = self.nco.steps_for_freq(freq).clone();
-        NCOIterator {
+    fn freq(&self, freq: f32) -> NCO<'a> {
+        let step = self.table.steps_for_freq(freq).clone();
+        NCO {
             index: 0,
             step: step,
-            nco: self.nco,
+            table: self.table,
         }
     }
 }
 
 pub trait NCOStep<'a> {
-    fn step(&'a self, step:usize) -> NCOIterator<'a>;
-    fn freq(&'a self, freq:f32) -> NCOIterator<'a>;
+    fn step(&'a self, step:usize) -> NCO<'a>;
+    fn freq(&'a self, freq:f32) -> NCO<'a>;
 }
 
-impl<'a> Iterator for NCOIterator<'a> {
+impl<'a> Iterator for NCO<'a> {
     type Item = f32;
     fn next(&mut self) -> Option<f32> {
-        let result = self.nco.samples[self.index >> self.nco.fractional];
-        let max = 1 << (self.nco.bits + self.nco.fractional);
+        let result = self.table.samples[self.index >> self.table.fractional];
+        let max = 1 << (self.table.bits + self.table.fractional);
         self.index = (self.index + self.step) % max;
         Some(result)
     }
