@@ -74,20 +74,21 @@ impl<'a> NCO<'a> {
 
     #[allow(dead_code)]
     pub fn set_phase(&mut self, phase: f32) {
-        let phase_step = ((phase / (2.0 * PI)) * self.step as f32) as usize % self.step;
+        let max = 1 << (self.table.bits + self.table.fractional);
+        let phase_step = ((phase / (2.0 * PI)) * max as f32) as usize % max;
         self.index = phase_step;
     }
 
     #[allow(dead_code)]
     pub fn shift_phase(&mut self, phase: f32) {
-        let phase_step = ((phase / (2.0 * PI)) * self.step as f32) as usize % self.step;
         let max = 1 << (self.table.bits + self.table.fractional);
+        let phase_step = ((phase / (2.0 * PI)) * max as f32) as usize % max;
         self.index = (self.index + phase_step) % max;
     }
 
     #[allow(dead_code)]
     pub fn differentiate(&mut self) {
-        self.shift_phase(PI*0.5);
+        self.shift_phase(0.5*PI);
     }
 
     #[allow(dead_code)]
