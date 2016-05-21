@@ -62,12 +62,37 @@ impl<'a> NCOTable {
 }
 
 impl<'a> NCO<'a> {
+    #[allow(dead_code)]
     pub fn set_step(&mut self, step: usize) {
         self.step = step;
     }
 
+    #[allow(dead_code)]
     pub fn set_freq(&mut self, freq: f32) {
         self.set_step(self.table.steps_for_freq(freq).clone());
+    }
+
+    #[allow(dead_code)]
+    pub fn set_phase(&mut self, phase: f32) {
+        let phase_step = ((phase / (2.0 * PI)) * self.step as f32) as usize % self.step;
+        self.index = phase_step;
+    }
+
+    #[allow(dead_code)]
+    pub fn shift_phase(&mut self, phase: f32) {
+        let phase_step = ((phase / (2.0 * PI)) * self.step as f32) as usize % self.step;
+        let max = 1 << (self.table.bits + self.table.fractional);
+        self.index = (self.index + phase_step) % max;
+    }
+
+    #[allow(dead_code)]
+    pub fn differentiate(&mut self) {
+        self.shift_phase(PI*0.5);
+    }
+
+    #[allow(dead_code)]
+    pub fn integrate(&mut self) {
+        self.shift_phase(PI*-0.5);
     }
 }
 
