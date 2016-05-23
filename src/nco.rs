@@ -10,6 +10,7 @@ pub struct NCOTable {
 }
 
 // Here's your numerically-controlled oscillator.
+#[derive(Clone)]
 struct NCO<'a> {
     pub index: usize,
     pub step: usize,
@@ -85,16 +86,6 @@ impl<'a> NCO<'a> {
         let phase_step = ((phase / (2.0 * PI)) * max as f32) as usize % max;
         self.index = (self.index + phase_step) % max;
     }
-
-    #[allow(dead_code)]
-    pub fn differentiate(&mut self) {
-        self.shift_phase(0.5*PI);
-    }
-
-    #[allow(dead_code)]
-    pub fn integrate(&mut self) {
-        self.shift_phase(PI*-0.5);
-    }
 }
 
 impl<'a> Iterator for NCO<'a> {
@@ -104,15 +95,5 @@ impl<'a> Iterator for NCO<'a> {
         let max = 1 << (self.table.bits + self.table.fractional);
         self.index = (self.index + self.step) % max;
         Some(result)
-    }
-}
-
-impl<'a> Clone for NCO<'a> {
-    fn clone(&self) -> NCO<'a> {
-        NCO {
-            index: self.index,
-            step: self.step,
-            table: self.table,
-        }
     }
 }
