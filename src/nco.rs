@@ -26,7 +26,7 @@ impl<'a> NCOTable {
     // only oscillate at 1, 1/2, 1/3, 1/4 of the (1<<8) entries.
     // fractional resolution lets you get closer to other values.
     #[allow(dead_code)]
-    pub fn new(fundamental: f32, bits: usize, fractional: usize) -> NCOTable {
+    pub fn sin(fundamental: f32, bits: usize, fractional: usize) -> NCOTable {
         let max = 1 << bits;
         NCOTable {
             bits: bits,
