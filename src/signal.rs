@@ -1,4 +1,5 @@
 use std::ops;
+use std::iter;
 
 #[derive(Clone)]
 struct Signal {
@@ -46,6 +47,26 @@ impl Signal {
         Signal {
             stream: vec,
             precision: self.precision,
+        }
+    }
+
+    #[allow(dead_code)]
+    // This is obviously kinda flawed.
+    // For starters it just assumes the other signal is a filter, and short.
+    // If the filter is larger than 'self', we should transpose.
+    // Also if the filter is > 64 in length we want to do an FFT convolution which is linear,
+    // rather than this, which is entirely not.
+    fn convolve(&self, other: &Signal) -> Signal {
+        let mut filter: Vec<i32> = other.stream.clone();
+        let unshift: usize = if self.precision >= other.precision { other.precision } else { self.precision };
+        filter.reverse();
+        let stream: Vec<i32> = iter::repeat(0).take(filter.len() - 1).chain(self.stream.clone()).collect();
+        let result = stream.windows(filter.len()).map(|w| {
+            w.iter().zip(filter.iter()).map(|(a, b)| (a * b) >> unshift).fold(0, |a, b| { a + b })
+        }).collect();
+        Signal {
+            stream: result,
+            precision: 0,
         }
     }
 }
@@ -217,4 +238,20 @@ fn test_div_prec() {
     };
     let c = a / b;
     assert!(c.stream == vec![1 << 2, 2 << 2, 1 << 2, 20 << 2]);
+}
+
+#[test]
+fn test_convolve() {
+    let a = Signal {
+        stream: vec![8, 9, 10, 4, 16],
+        precision: 2,
+    };
+    let b = Signal {
+        stream: vec![8],
+        precision: 3,
+    };
+    let c = a.convolve(&b);
+    let expected: Vec<i32> = a.stream.iter().map(|a| a << 1).collect();
+    println!("\nExpected: {:?},\nGot:      {:?}", expected, c.stream);
+    assert!(expected == c.stream);
 }
