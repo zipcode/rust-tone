@@ -28,11 +28,14 @@ impl Signal {
     #[allow(dead_code)]
     fn diff(&self) -> Signal {
         let mut vec: Vec<i32> = vec![];
-        let mut last: &i32 = &0;
+        let zero = 0;
+        let mut last: Vec<&i32> = vec![&zero, &zero];
         for item in &self.stream {
-            vec.push(item - last);
-            last = item;
+            vec.push(item - last.remove(0));
+            last.push(item);
         }
+        vec.remove(0); // Throw away the first value
+        vec.push(0 - last.remove(0)); // Pop on a final value
         Signal::from(vec)
     }
 }
@@ -98,9 +101,11 @@ fn test_sum() {
 
 #[test]
 fn test_diff() {
-    let s = Signal::from(vec![0, 0, 1, 2, 3, 3]);
+    let s = Signal::from(vec![9, 0, 1, 2, 3, 3]);
     let t = s.diff();
-    assert!(t.stream == vec![0, 0, 1, 1, 1, 0]);
+    println!("t.len:{} s.len:{}", t.stream.len(), s.stream.len());
+    assert!(t.stream.len() == s.stream.len(), "Signal lengths should match");
+    assert!(t.stream == vec![0, -8, 2, 2, 1, -3]);
 }
 
 #[test]
