@@ -72,6 +72,23 @@ impl ops::Mul for Signal {
     }
 }
 
+impl ops::Div for Signal {
+    type Output = Signal;
+    fn div(self, rhs: Self::Output) -> Self::Output {
+        assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
+        let prec: usize = if self.precision < rhs.precision { rhs.precision } else { self.precision };
+        let unshift: usize = if self.precision >= rhs.precision { rhs.precision } else { self.precision };
+        let res: Vec<i32> = self.stream.iter()
+          .zip(rhs.stream.iter())
+          .map(|(a, b)| (a / b) * (1 << unshift))
+          .collect();
+        Signal {
+            stream: res,
+            precision: prec,
+        }
+    }
+}
+
 #[test]
 fn test_sum() {
     let s = Signal::from(vec![0, 0, 1, 1, 1, 0]);
@@ -122,4 +139,26 @@ fn test_mul_prec() {
     };
     let c = a * b;
     assert!(c.stream == vec![0, 3 << 2, 6 << 2]);
+}
+
+#[test]
+fn test_div() {
+    let a = Signal::from(vec![4, 4, 4]);
+    let b = Signal::from(vec![4, 2, 3]);
+    let c: Signal = a / b;
+    assert!(c.stream == vec![1, 2, 1]);
+}
+
+#[test]
+fn test_div_prec() {
+    let a = Signal {
+        stream: vec![4 << 2, 4 << 2, 4 << 2, 100 << 2],
+        precision: 2,
+    };
+    let b = Signal {
+        stream: vec![4 << 1, 2 << 1, 3 << 1, 5 << 1],
+        precision: 1,
+    };
+    let c = a / b;
+    assert!(c.stream == vec![1 << 2, 2 << 2, 1 << 2, 20 << 2]);
 }
