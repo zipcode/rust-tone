@@ -26,7 +26,7 @@ impl<'a> NCOTable {
     // only oscillate at 1, 1/2, 1/3, 1/4 of the (1<<8) entries.
     // fractional resolution lets you get closer to other values.
     #[allow(dead_code)]
-    pub fn sin(fundamental: f32, bits: usize, fractional: usize) -> NCOTable {
+    pub fn new(fundamental: f32, bits: usize, fractional: usize) -> NCOTable {
         let max = 1 << bits;
         NCOTable {
             bits: bits,
@@ -60,6 +60,27 @@ impl<'a> NCOTable {
             table: &self,
         }
     }
+
+    pub fn sin(&'a self, freq: f32) -> NCO<'a> {
+        Self::freq(self, freq)
+    }
+
+    pub fn cos(&'a self, freq: f32) -> NCO<'a> {
+        let mut osc = Self::sin(self, freq);
+        osc.set_phase(PI/2.0);
+        osc
+    }
+}
+
+#[test]
+fn test_sin_cos() {
+    let table = NCOTable::new(44100.0, 8, 4);
+    let mut s = table.sin(500.0);
+    let mut c = table.cos(500.0);
+    let cval = c.next().unwrap();
+    println!("{}", cval);
+    assert!(s.next() == Some(0.0), "Sin should be 0.0");
+    assert!(cval > 0.99, "Cos should be 1.0");
 }
 
 impl<'a> NCO<'a> {
@@ -86,6 +107,17 @@ impl<'a> NCO<'a> {
         let phase_step = ((phase / (2.0 * PI)) * max as f32) as usize % max;
         self.index = (self.index + phase_step) % max;
     }
+}
+
+#[test]
+fn test_set_phase() {
+    let table = NCOTable::new(44100.0, 8, 2);
+    let mut osc = table.freq(500.0);
+    assert!(osc.index == 0, "Initial index should be 0");
+    osc.set_phase(PI/2.0);
+    println!("oscillator index is {}", osc.index);
+    // 1/4 of the way around is 1 << 8, since 1 << (8 + 2) is the full table size
+    assert!(osc.index == 256, "Phase-shifted index should be 1/4 around the values");
 }
 
 impl<'a> Iterator for NCO<'a> {
