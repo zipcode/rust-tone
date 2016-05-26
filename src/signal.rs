@@ -2,9 +2,9 @@ use std::ops;
 use std::iter;
 
 #[derive(Clone)]
-struct Signal {
-    stream: Vec<i32>,
-    precision: usize,
+pub struct Signal {
+    pub stream: Vec<i32>,
+    pub precision: usize,
 }
 
 impl From<Vec<i32>> for Signal {
@@ -18,7 +18,7 @@ impl From<Vec<i32>> for Signal {
 
 impl Signal {
     #[allow(dead_code)]
-    fn sum(&self) -> Signal {
+    pub fn sum(&self) -> Signal {
         let mut vec: Vec<i32> = vec![];
         let mut sum = 0;
         for item in &self.stream {
@@ -34,7 +34,7 @@ impl Signal {
     #[allow(dead_code)]
     // This diff centers itself around each value so as to avoid adding noise if we
     // wish to relate a value to its undifferentiated version, eg s(t)/s'(t).
-    fn diff(&self) -> Signal {
+    pub fn diff(&self) -> Signal {
         let mut vec: Vec<i32> = vec![];
         let zero = 0;
         let mut last: Vec<&i32> = vec![&zero, &zero];
@@ -68,6 +68,10 @@ impl Signal {
             stream: result,
             precision: 0,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.stream.len()
     }
 }
 
@@ -117,7 +121,11 @@ impl ops::Div for Signal {
         let unshift: usize = if self.precision >= rhs.precision { rhs.precision } else { self.precision };
         let res: Vec<i32> = self.stream.iter()
           .zip(rhs.stream.iter())
-          .map(|(a, b)| (a / b) * (1 << unshift))
+          .map(|(a, b)| {
+              if *b != 0 {
+                  (*a / *b) * (1 << unshift)
+              } else { 0 }
+          })
           .collect();
         Signal {
             stream: res,

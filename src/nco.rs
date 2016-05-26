@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+use signal::Signal;
 
 // An initial oscillator table
 // This should be long-lived: it's doing all the computation up front.
@@ -106,6 +107,15 @@ impl<'a> NCO<'a> {
         let max = 1 << (self.table.bits + self.table.fractional);
         let phase_step = ((phase / (2.0 * PI)) * max as f32) as usize % max;
         self.index = (self.index + phase_step) % max;
+    }
+
+    pub fn into_signal(self, samples: usize) -> Signal {
+        let precision = 16;
+        let vec: Vec<i32> = self.take(samples).map(|s| (s * (1 << precision) as f32) as i32).collect();
+        Signal {
+            stream: vec,
+            precision: precision,
+        }
     }
 }
 
