@@ -18,14 +18,18 @@ impl From<Vec<i32>> for Signal {
 impl Signal {
     #[allow(dead_code)]
     fn sum(&self) -> Signal {
-        let result: Vec<i32> = self.stream.iter().scan(0, |st, x| {
-            *st = x + *st;
-            Some(st.clone())
-        }).collect();
-        Signal::from(result)
+        let mut vec: Vec<i32> = vec![];
+        let mut sum = 0;
+        for item in &self.stream {
+            sum = sum + item;
+            vec.push(sum);
+        }
+        Signal::from(vec)
     }
 
     #[allow(dead_code)]
+    // This diff centers itself around each value so as to avoid adding noise if we
+    // wish to relate a value to its undifferentiated version, eg s(t)/s'(t).
     fn diff(&self) -> Signal {
         let mut vec: Vec<i32> = vec![];
         let zero = 0;
@@ -106,6 +110,19 @@ fn test_diff() {
     println!("t.len:{} s.len:{}", t.stream.len(), s.stream.len());
     assert!(t.stream.len() == s.stream.len(), "Signal lengths should match");
     assert!(t.stream == vec![0, -8, 2, 2, 1, -3]);
+}
+
+#[test]
+fn test_sum_diff() {
+    // Explicitly enveloping this with 0s at either end.
+    let s = Signal::from(vec![0, 1, 2, 3, 4, 3, 2, 1, 0, 9, 0]);
+    let mut t = s.diff().sum();
+    let mut u = s.sum().diff();
+    println!("\ns:  {:?}\n+:  {:?}\n/:  {:?}\n\n/+: {:?}\n+-: {:?}", s.stream, s.sum().stream, s.diff().stream, t.stream, u.stream);
+    // That last value is gonna be garbage
+    u.stream.pop();
+    t.stream.pop();
+    assert!(u.stream == t.stream, "diff/sum should be vaguely symmetric");
 }
 
 #[test]
