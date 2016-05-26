@@ -24,7 +24,10 @@ impl Signal {
             sum = sum + item;
             vec.push(sum);
         }
-        Signal::from(vec)
+        Signal {
+            stream: vec,
+            precision: self.precision,
+        }
     }
 
     #[allow(dead_code)]
@@ -40,7 +43,10 @@ impl Signal {
         }
         vec.remove(0); // Throw away the first value
         vec.push(0 - last.remove(0)); // Pop on a final value
-        Signal::from(vec)
+        Signal {
+            stream: vec,
+            precision: self.precision,
+        }
     }
 }
 
@@ -49,7 +55,10 @@ impl ops::Add for Signal {
     fn add(self, rhs: Self::Output) -> Signal {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
         let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a + b).collect();
-        Signal::from(res)
+        Signal {
+            stream: res,
+            precision: self.precision,
+        }
     }
 }
 
@@ -104,12 +113,37 @@ fn test_sum() {
 }
 
 #[test]
+fn test_sum_prec() {
+    let s = Signal {
+        stream: vec![0, 0, 1, 1, 1, 0].iter().map(|x| x << 6).collect(),
+        precision: 6
+    };
+    let t = s.sum();
+    let target: Vec<i32> = vec![0, 0, 1, 2, 3, 3].iter().map(|x| x << 6).collect();
+    assert!(t.stream == target);
+    assert!(t.precision == s.precision);
+}
+
+#[test]
 fn test_diff() {
     let s = Signal::from(vec![9, 0, 1, 2, 3, 3]);
     let t = s.diff();
     println!("t.len:{} s.len:{}", t.stream.len(), s.stream.len());
     assert!(t.stream.len() == s.stream.len(), "Signal lengths should match");
     assert!(t.stream == vec![0, -8, 2, 2, 1, -3]);
+}
+
+#[test]
+fn test_diff_prec() {
+    let s = Signal {
+        stream: vec![9 << 6, 0 << 6, 1 << 6, 2 << 6, 3 << 6, 3 << 6],
+        precision: 6,
+    };
+    let t = s.diff();
+    let target: Vec<i32> = vec![0, -8, 2, 2, 1, -3].iter().map(|x| x << 6).collect();
+    println!("t: {:?}, target: {:?}", t.stream, target);
+    assert!(t.stream == target);
+    assert!(t.precision == s.precision);
 }
 
 #[test]
