@@ -32,13 +32,13 @@ impl Kernel {
                 (2.0 * PI * c * freq_fraction).sin() / (c * PI)
             }
         }).collect();
-        let scale: f32 = (1 << 15) as f32;
+        let scale: f32 = (1 << 16) as f32 - 1.0;
         let mapped: Vec<i32> = real.iter().map(|x| {
             ((*x as f32) * scale) as i32
         }).collect();
         Signal {
             stream: mapped,
-            precision: 15,
+            precision: 16,
         }
     }
 
