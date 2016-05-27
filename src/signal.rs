@@ -56,7 +56,7 @@ impl Signal {
     // If the filter is larger than 'self', we should transpose.
     // Also if the filter is > 64 in length we want to do an FFT convolution which is linear,
     // rather than this, which is entirely not.
-    fn convolve(&self, other: &Signal) -> Signal {
+    pub fn convolve(&self, other: &Signal) -> Signal {
         let mut filter: Vec<i32> = other.stream.clone();
         let unshift: usize = if self.precision >= other.precision { other.precision } else { self.precision };
         filter.reverse();
@@ -110,11 +110,7 @@ impl ops::Mul for Signal {
         let res: Vec<i32> = self.stream.iter()
             .zip(rhs.stream.iter())
             .map(|(a, b)| {
-                if a.abs() > 65535 || b.abs() > 65535 {
-                    ((*a as i64 * *b as i64) >> unshift) as i32
-                } else {
-                    (a * b) >> unshift
-                }
+                ((*a as i64 * *b as i64) >> unshift) as i32
             })
             .collect();
         Signal {
