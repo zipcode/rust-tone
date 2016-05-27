@@ -1,10 +1,12 @@
 extern crate hound;
 
+mod filter;
 mod nco;
 mod signal;
 
 use nco::NCOTable;
 use signal::Signal;
+use filter::Kernel;
 
 const DETECT: f32 = 1500.0;
 const FILE: &'static str = "RTTY_170Hz_45point45-01.wav";
@@ -27,6 +29,9 @@ fn main() {
         }).collect(),
         precision: 16,
     };
+
+    let filter: Signal = Kernel::new(rate as f32).windowed_sinc(1500.0, 31);
+    println!("{:?}", filter.stream);
 
     let i = table.sin(DETECT).into_signal(signal.len()) * signal.clone();
     let q = table.cos(DETECT).into_signal(signal.len()) * signal.clone();

@@ -108,9 +108,15 @@ impl ops::Mul for Signal {
         let prec: usize = if self.precision < rhs.precision { rhs.precision } else { self.precision };
         let unshift: usize = if self.precision >= rhs.precision { rhs.precision } else { self.precision };
         let res: Vec<i32> = self.stream.iter()
-          .zip(rhs.stream.iter())
-          .map(|(a, b)| (a * b) >> unshift)
-          .collect();
+            .zip(rhs.stream.iter())
+            .map(|(a, b)| {
+                if a.abs() > 65535 || b.abs() > 65535 {
+                    ((*a as i64 * *b as i64) >> unshift) as i32
+                } else {
+                    (a * b) >> unshift
+                }
+            })
+            .collect();
         Signal {
             stream: res,
             precision: prec,
