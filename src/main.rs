@@ -8,6 +8,7 @@ use signal::Signal;
 
 const DETECT: f32 = 1500.0;
 const FILE: &'static str = "RTTY_170Hz_45point45-01.wav";
+const SKIP: usize = 2000;
 
 fn main() {
     let reader = match hound::WavReader::open(FILE) {
@@ -37,18 +38,18 @@ fn main() {
     let numerator = (i.clone() * qdiff.clone()) - (q.clone() * idiff.clone());
     let result = numerator.clone() / denominator.clone();
 
-    println!("I  {:?}", i.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
-    println!("Q  {:?}", q.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
-    println!("Id {:?}", idiff.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
-    println!("Qd {:?}", qdiff.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("I  {:?}", i.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("Q  {:?}", q.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("Id {:?}", idiff.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("Qd {:?}", qdiff.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
 
-    println!("I2 {:?}", i2.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
-    println!("Q2 {:?}", q2.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("I2 {:?}", i2.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("Q2 {:?}", q2.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
 
-    println!("N  {:?}", numerator.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
-    println!("D  {:?}", denominator.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("N  {:?}", numerator.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("D  {:?}", denominator.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
 
-    println!("R  {:?}", result.clone().stream.iter().skip(5000).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
+    println!("R  {:?}", result.clone().stream.iter().skip(SKIP).take(10).map(|x| x.clone()).collect::<Vec<i32>>());
 
     println!("I {}  Q {}  Id {}  Qd {}  I2 {}  Q2 {}  N {}  D {}  R {}",
         i.precision, q.precision, idiff.precision, qdiff.precision, i2.precision, q2.precision, numerator.precision, denominator.precision, result.precision);
@@ -65,7 +66,7 @@ fn main() {
             return
         }
     };
-    for s in result.stream {
+    for s in numerator.stream {
         writer.write_sample(s as i16).expect("Could not write sample");
     }
 }

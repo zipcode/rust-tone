@@ -79,7 +79,8 @@ impl ops::Add for Signal {
     type Output = Signal;
     fn add(self, rhs: Self::Output) -> Signal {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a + b).collect();
+        let shift = self.precision - rhs.precision;
+        let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a + (b << shift)).collect();
         Signal {
             stream: res,
             precision: self.precision,
@@ -91,8 +92,12 @@ impl ops::Sub for Signal {
     type Output = Signal;
     fn sub(self, rhs: Self::Output) -> Self::Output {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a - b).collect();
-        Signal::from(res)
+        let shift = self.precision - rhs.precision;
+        let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a - (b << shift)).collect();
+        Signal {
+            stream: res,
+            precision: self.precision
+        }
     }
 }
 
@@ -104,7 +109,7 @@ impl ops::Mul for Signal {
         let unshift: usize = if self.precision >= rhs.precision { rhs.precision } else { self.precision };
         let res: Vec<i32> = self.stream.iter()
           .zip(rhs.stream.iter())
-          .map(|(a, b)| a * b / (1 << unshift))
+          .map(|(a, b)| (a * b) >> unshift)
           .collect();
         Signal {
             stream: res,
@@ -117,19 +122,17 @@ impl ops::Div for Signal {
     type Output = Signal;
     fn div(self, rhs: Self::Output) -> Self::Output {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let prec: usize = if self.precision < rhs.precision { rhs.precision } else { self.precision };
-        let unshift: usize = if self.precision >= rhs.precision { rhs.precision } else { self.precision };
         let res: Vec<i32> = self.stream.iter()
-          .zip(rhs.stream.iter())
-          .map(|(a, b)| {
-              if *b != 0 {
-                  (*a / *b) * (1 << unshift)
-              } else { 0 }
-          })
-          .collect();
+            .zip(rhs.stream.iter())
+            .map(|(a, b)| {
+                if *b != 0 {
+                    (*a << rhs.precision) / *b
+                } else { 0 }
+            })
+            .collect();
         Signal {
             stream: res,
-            precision: prec,
+            precision: self.precision,
         }
     }
 }
@@ -245,7 +248,10 @@ fn test_div_prec() {
         precision: 1,
     };
     let c = a / b;
-    assert!(c.stream == vec![1 << 2, 2 << 2, 1 << 2, 20 << 2]);
+    let expected: Vec<i32> = vec![1 << 2, 2 << 2, 5, 20 << 2];
+    println!("\nExpected: {:?}\nGot:      {:?}", expected, c.stream);
+    assert!(c.stream == expected);
+    assert!(c.precision == 2);
 }
 
 #[test]
