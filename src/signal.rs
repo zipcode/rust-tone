@@ -1,5 +1,7 @@
 use std::ops;
 use std::iter;
+use std::cmp::max;
+use std::cmp::min;
 
 #[derive(Clone)]
 pub struct Signal {
@@ -58,15 +60,25 @@ impl Signal {
     // rather than this, which is entirely not.
     pub fn convolve(&self, other: &Signal) -> Signal {
         let mut filter: Vec<i32> = other.stream.clone();
-        let unshift: usize = if self.precision >= other.precision { other.precision } else { self.precision };
         filter.reverse();
+        let unshift: usize = min(self.precision, other.precision);
         let stream: Vec<i32> = iter::repeat(0).take(filter.len() - 1).chain(self.stream.clone()).collect();
         let result = stream.windows(filter.len()).map(|w| {
-            w.iter().zip(filter.iter()).map(|(a, b)| (a * b) >> unshift).fold(0, |a, b| { a + b })
+            w.iter().zip(filter.iter()).map(|(a, b)| (*a * *b) >> unshift).fold(0, |a, b| { a + b })
         }).collect();
         Signal {
             stream: result,
-            precision: 0,
+            precision: max(self.precision, other.precision),
+        }
+    }
+
+    pub fn scale(self, numerator: i32, denominator: i32) -> Signal {
+        let res: Vec<i32> = self.stream.iter().map(|x| {
+            x * numerator / denominator
+        }).collect();
+        Signal {
+            stream: res,
+            precision: self.precision,
         }
     }
 
@@ -260,14 +272,14 @@ fn test_div_prec() {
 fn test_convolve() {
     let a = Signal {
         stream: vec![8, 9, 10, 4, 16],
-        precision: 2,
+        precision: 0,
     };
     let b = Signal {
-        stream: vec![8],
-        precision: 3,
+        stream: vec![1 << 16],
+        precision: 16,
     };
     let c = a.convolve(&b);
-    let expected: Vec<i32> = a.stream.iter().map(|a| a << 1).collect();
+    let expected: Vec<i32> = a.stream.iter().map(|a| a << 16).collect();
     println!("\nExpected: {:?},\nGot:      {:?}", expected, c.stream);
     assert!(expected == c.stream);
 }
