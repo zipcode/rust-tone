@@ -1,19 +1,15 @@
 use std::ops;
 use std::iter;
-use std::cmp::max;
-use std::cmp::min;
 
 #[derive(Clone)]
 pub struct Signal {
-    pub stream: Vec<i32>,
-    pub precision: usize,
+    pub stream: Vec<f32>,
 }
 
-impl From<Vec<i32>> for Signal {
-    fn from(v: Vec<i32>) -> Signal {
+impl From<Vec<f32>> for Signal {
+    fn from(v: Vec<f32>) -> Signal {
         Signal {
             stream: v,
-            precision: 0,
         }
     }
 }
@@ -21,15 +17,14 @@ impl From<Vec<i32>> for Signal {
 impl Signal {
     #[allow(dead_code)]
     pub fn sum(&self) -> Signal {
-        let mut vec: Vec<i32> = vec![];
-        let mut sum = 0;
+        let mut vec: Vec<f32> = vec![];
+        let mut sum = 0.0;
         for item in &self.stream {
             sum = sum + item;
             vec.push(sum);
         }
         Signal {
             stream: vec,
-            precision: self.precision,
         }
     }
 
@@ -37,18 +32,17 @@ impl Signal {
     // This diff centers itself around each value so as to avoid adding noise if we
     // wish to relate a value to its undifferentiated version, eg s(t)/s'(t).
     pub fn diff(&self) -> Signal {
-        let mut vec: Vec<i32> = vec![];
-        let zero = 0;
-        let mut last: Vec<&i32> = vec![&zero, &zero];
+        let mut vec: Vec<f32> = vec![];
+        let zero = 0.0;
+        let mut last: Vec<&f32> = vec![&zero, &zero];
         for item in &self.stream {
             vec.push(item - last.remove(0));
             last.push(item);
         }
         vec.remove(0); // Throw away the first value
-        vec.push(0 - last.remove(0)); // Pop on a final value
+        vec.push(0.0 - last.remove(0)); // Pop on a final value
         Signal {
             stream: vec,
-            precision: self.precision,
         }
     }
 
@@ -59,26 +53,23 @@ impl Signal {
     // Also if the filter is > 64 in length we want to do an FFT convolution which is linear,
     // rather than this, which is entirely not.
     pub fn convolve(&self, other: &Signal) -> Signal {
-        let mut filter: Vec<i32> = other.stream.clone();
+        let mut filter: Vec<f32> = other.stream.clone();
         filter.reverse();
-        let unshift: usize = min(self.precision, other.precision);
-        let stream: Vec<i32> = iter::repeat(0).take(filter.len() - 1).chain(self.stream.clone()).collect();
+        let stream: Vec<f32> = iter::repeat(0.0).take(filter.len() - 1).chain(self.stream.clone()).collect();
         let result = stream.windows(filter.len()).map(|w| {
-            w.iter().zip(filter.iter()).map(|(a, b)| (*a * *b) >> unshift).fold(0, |a, b| { a + b })
+            w.iter().zip(filter.iter()).map(|(a, b)| *a * *b).fold(0.0, |a, b| { a + b })
         }).collect();
         Signal {
             stream: result,
-            precision: max(self.precision, other.precision),
         }
     }
 
-    pub fn scale(self, numerator: i32, denominator: i32) -> Signal {
-        let res: Vec<i32> = self.stream.iter().map(|x| {
-            x * numerator / denominator
+    pub fn scale(self, value: f32) -> Signal {
+        let res: Vec<f32> = self.stream.iter().map(|x| {
+            x * value
         }).collect();
         Signal {
             stream: res,
-            precision: self.precision,
         }
     }
 
@@ -91,11 +82,9 @@ impl ops::Add for Signal {
     type Output = Signal;
     fn add(self, rhs: Self::Output) -> Signal {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let shift = self.precision - rhs.precision;
-        let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a + (b << shift)).collect();
+        let res: Vec<f32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a + b).collect();
         Signal {
             stream: res,
-            precision: self.precision,
         }
     }
 }
@@ -104,11 +93,9 @@ impl ops::Sub for Signal {
     type Output = Signal;
     fn sub(self, rhs: Self::Output) -> Self::Output {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let shift = self.precision - rhs.precision;
-        let res: Vec<i32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a - (b << shift)).collect();
+        let res: Vec<f32> = self.stream.iter().zip(rhs.stream.iter()).map(|(a, b)| a - b).collect();
         Signal {
             stream: res,
-            precision: self.precision
         }
     }
 }
@@ -117,17 +104,14 @@ impl ops::Mul for Signal {
     type Output = Signal;
     fn mul(self, rhs: Self::Output) -> Self::Output {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let prec: usize = if self.precision < rhs.precision { rhs.precision } else { self.precision };
-        let unshift: usize = if self.precision >= rhs.precision { rhs.precision } else { self.precision };
-        let res: Vec<i32> = self.stream.iter()
+        let res: Vec<f32> = self.stream.iter()
             .zip(rhs.stream.iter())
             .map(|(a, b)| {
-                ((*a as i64 * *b as i64) >> unshift) as i32
+                *a * *b
             })
             .collect();
         Signal {
             stream: res,
-            precision: prec,
         }
     }
 }
@@ -136,17 +120,14 @@ impl ops::Div for Signal {
     type Output = Signal;
     fn div(self, rhs: Self::Output) -> Self::Output {
         assert!(self.stream.len() == rhs.stream.len(), "Stream length mismatch");
-        let res: Vec<i32> = self.stream.iter()
+        let res: Vec<f32> = self.stream.iter()
             .zip(rhs.stream.iter())
             .map(|(a, b)| {
-                if *b != 0 {
-                    (*a << rhs.precision) / *b
-                } else { 0 }
+                *a / *b
             })
             .collect();
         Signal {
             stream: res,
-            precision: self.precision,
         }
     }
 }

@@ -17,8 +17,8 @@ fn main() {
 
     let filter: Signal = Kernel::new(rate as f32).windowed_sinc(1000.0, 111);
 
-    let s1 = table.sin(1500.0).into_signal(rate).scale(1, 2);
-    let s2 = table.sin(1800.0).into_signal(rate).scale(1, 2);
+    let s1 = table.sin(1500.0).into_signal(rate);//.scale(0.5);
+    let s2 = table.sin(1800.0).into_signal(rate).scale(0.5);
     //let s3 = s1 + s2;
 
     let s4 = s1.convolve(&filter);
@@ -36,6 +36,6 @@ fn main() {
         }
     };
     for s in s4.stream {
-        writer.write_sample(s as i16).expect("Could not write sample");
+        writer.write_sample((s * 32766.0) as i16).expect("Could not write sample");
     }
 }

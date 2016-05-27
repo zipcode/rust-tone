@@ -110,14 +110,9 @@ impl<'a> NCO<'a> {
     }
 
     pub fn into_signal(self, samples: usize) -> Signal {
-        let precision = 16;
-        let max = ((1 << (precision - 1)) - 1) as f32;
-        let vec: Vec<i32> = self.take(samples).map(|s| {
-                (s * max) as i32
-        }).collect();
+        let vec: Vec<f32> = self.take(samples).collect();
         Signal {
             stream: vec,
-            precision: precision,
         }
     }
 }
