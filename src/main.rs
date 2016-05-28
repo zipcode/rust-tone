@@ -8,6 +8,8 @@ use nco::NCOTable;
 use signal::Signal;
 use filter::Kernel;
 
+use std::cmp::{max, min};
+
 const DETECT: f32 = 1500.0;
 const FILE: &'static str = "RTTY_170Hz_45point45-01.wav";
 
@@ -20,7 +22,7 @@ fn main() {
     let rate = reader.spec().sample_rate;
 
     let table = NCOTable::new(rate as f32, 16, 2);
-    let filterp: Signal = Kernel::new(rate as f32).windowed_sinc(1300.0, 101);
+    let filterp: Signal = Kernel::new(rate as f32).windowed_sinc(700.0, 101);
     let filter: Signal = filterp.convolve(&filterp);
 
     let size = r.len();
@@ -31,7 +33,7 @@ fn main() {
     let i2: Signal = i.clone() * i.clone();
     let q2: Signal = q.clone() * q.clone();
 
-    let result = ((i * qd + q * id) / (i2 + q2)).filter(&filter);
+    let result = ((i * qd - q * id) / (i2 + q2)).filter(&filter).scale(2.0);
 
     let spec = hound::WavSpec {
         channels: 1,
@@ -45,7 +47,9 @@ fn main() {
             return
         }
     };
-    for s in result.stream {
-        writer.write_sample((s * (1 << 15) as f32 - 2.0) as i16).expect("Could not write sample");
-    }
+    let scale: f32 = (1 << 15) as f32 - 2.0; // Negative values only go down to this!
+    for x in result.stream {
+        let s = (if x.abs() > 1.0 { 1.0 * x.signum() } else { x }) * scale;
+        writer.write_sample(s as i16).expect("Could not write sample");
+    };
 }
