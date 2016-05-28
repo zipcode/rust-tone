@@ -27,7 +27,7 @@ impl Kernel {
             if x == 0 {
                 1.0
             } else {
-                (2.0 * PI * c * freq_fraction).sin() / (c * PI)
+                (2.0 * PI * c * freq_fraction).sin() / c
             }
         }).collect();
         let scale: f32 = real.iter().fold(0.0, |st, x| { st + x });

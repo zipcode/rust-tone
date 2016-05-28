@@ -8,20 +8,30 @@ use nco::NCOTable;
 use signal::Signal;
 use filter::Kernel;
 
-const DETECT: f32 = 1417.0;
+const DETECT: f32 = 1500.0;
 const FILE: &'static str = "RTTY_170Hz_45point45-01.wav";
 
 fn main() {
-    let rate: usize = 11025;
+    let mut reader = hound::WavReader::open(FILE).expect("file could not be loaded");
+    let samples: Vec<f32> = reader.samples::<i16>().map(|s| {
+        s.expect("could not read sample") as f32 / 32766.0
+    }).collect();
+    let r: Signal = Signal::from(samples);
+    let rate = reader.spec().sample_rate;
+
     let table = NCOTable::new(rate as f32, 16, 2);
+    let filterp: Signal = Kernel::new(rate as f32).windowed_sinc(1300.0, 101);
+    let filter: Signal = filterp.convolve(&filterp);
 
-    let filter: Signal = Kernel::new(rate as f32).windowed_sinc(700.0, 201);
+    let size = r.len();
+    let i: Signal = (table.sin(DETECT).into_signal(size) * r.clone()).filter(&filter);
+    let q: Signal = (table.cos(DETECT).into_signal(size) * r.clone()).filter(&filter);
+    let id: Signal = i.clone().diff();
+    let qd: Signal = q.clone().diff();
+    let i2: Signal = i.clone() * i.clone();
+    let q2: Signal = q.clone() * q.clone();
 
-    let s1 = table.sin(1000.0).into_signal(rate).scale(0.5);
-    let s2 = table.sin(400.0).into_signal(rate).scale(0.5);
-    let s3 = s1 + s2;
-
-    let s4 = s3.convolve(&filter).convolve(&filter).convolve(&filter);
+    let result = ((i * qd + q * id) / (i2 + q2)).filter(&filter);
 
     let spec = hound::WavSpec {
         channels: 1,
@@ -35,7 +45,7 @@ fn main() {
             return
         }
     };
-    for s in s4.stream {
-        writer.write_sample((s * 32766.0) as i16).expect("Could not write sample");
+    for s in result.stream {
+        writer.write_sample((s * (1 << 15) as f32 - 2.0) as i16).expect("Could not write sample");
     }
 }

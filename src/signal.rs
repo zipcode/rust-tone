@@ -64,6 +64,13 @@ impl Signal {
         }
     }
 
+    pub fn filter(&self, other: &Signal) -> Signal {
+        let mut s = self.convolve(&other);
+        let len = other.len() * 2;
+        for _ in (0..len) { s.stream.remove(0); }
+        s
+    }
+
     pub fn scale(self, value: f32) -> Signal {
         let res: Vec<f32> = self.stream.iter().map(|x| {
             x * value
