@@ -15,13 +15,13 @@ fn main() {
     let rate: usize = 11025;
     let table = NCOTable::new(rate as f32, 16, 2);
 
-    let filter: Signal = Kernel::new(rate as f32).windowed_sinc(1000.0, 111);
+    let filter: Signal = Kernel::new(rate as f32).windowed_sinc(700.0, 201);
 
-    let s1 = table.sin(1500.0).into_signal(rate);//.scale(0.5);
-    let s2 = table.sin(1800.0).into_signal(rate).scale(0.5);
-    //let s3 = s1 + s2;
+    let s1 = table.sin(1000.0).into_signal(rate).scale(0.5);
+    let s2 = table.sin(400.0).into_signal(rate).scale(0.5);
+    let s3 = s1 + s2;
 
-    let s4 = s1.convolve(&filter);
+    let s4 = s3.convolve(&filter).convolve(&filter).convolve(&filter);
 
     let spec = hound::WavSpec {
         channels: 1,

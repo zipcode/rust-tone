@@ -30,14 +30,19 @@ impl Kernel {
                 (2.0 * PI * c * freq_fraction).sin() / (c * PI)
             }
         }).collect();
+        let scale: f32 = real.iter().fold(0.0, |st, x| { st + x });
         Signal {
-            stream: real,
+            stream: real.iter().map(|x| x/scale).collect(),
         }
     }
 
     #[allow(dead_code)]
     pub fn windowed_sinc(&self, frequency: f32, bins: usize) -> Signal {
-        self.sinc(frequency, bins) * Window::blackman(bins)
+        let base = self.sinc(frequency, bins) * Window::blackman(bins);
+        let scale: f32 = base.stream.iter().fold(0.0, |st, x| { st + x });
+        Signal {
+            stream: base.stream.iter().map(|x| x/scale).collect(),
+        }
     }
 }
 
