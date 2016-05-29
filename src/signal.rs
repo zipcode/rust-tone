@@ -1,9 +1,14 @@
 use std::ops;
 use std::iter;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Signal {
     pub stream: Vec<f32>,
+}
+
+#[derive(Clone,Debug)]
+pub struct BitStream {
+    pub stream: Vec<usize>,
 }
 
 impl From<Vec<f32>> for Signal {
@@ -83,6 +88,25 @@ impl Signal {
 
     pub fn len(&self) -> usize {
         self.stream.len()
+    }
+
+    #[allow(dead_code)]
+    pub fn into_bitstream(self, threshold: f32) -> BitStream {
+        let mut res: Vec<usize> = vec![];
+        let mut state: usize = 0;
+        for s in self.stream {
+            let t: f32 = if state == 0 { threshold } else { -threshold };
+            if s >= t {
+                state = 1;
+                res.push(1);
+            } else {
+                state = 0;
+                res.push(0);
+            }
+        }
+        BitStream {
+            stream: res,
+        }
     }
 }
 
