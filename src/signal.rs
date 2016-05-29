@@ -142,49 +142,24 @@ impl ops::Div for Signal {
 
 #[test]
 fn test_sum() {
-    let s = Signal::from(vec![0, 0, 1, 1, 1, 0]);
+    let s = Signal::from(vec![0.0, 0.0, 1.0, 1.0, 1.0, 0.0]);
     let t = s.sum();
-    assert!(t.stream == vec![0, 0, 1, 2, 3, 3]);
-}
-
-#[test]
-fn test_sum_prec() {
-    let s = Signal {
-        stream: vec![0, 0, 1, 1, 1, 0].iter().map(|x| x << 6).collect(),
-        precision: 6
-    };
-    let t = s.sum();
-    let target: Vec<i32> = vec![0, 0, 1, 2, 3, 3].iter().map(|x| x << 6).collect();
-    assert!(t.stream == target);
-    assert!(t.precision == s.precision);
+    assert!(t.stream == vec![0.0, 0.0, 1.0, 2.0, 3.0, 3.0]);
 }
 
 #[test]
 fn test_diff() {
-    let s = Signal::from(vec![9, 0, 1, 2, 3, 3]);
+    let s = Signal::from(vec![9.0, 0.0, 1.0, 2.0, 3.0, 3.0]);
     let t = s.diff();
     println!("t.len:{} s.len:{}", t.stream.len(), s.stream.len());
     assert!(t.stream.len() == s.stream.len(), "Signal lengths should match");
-    assert!(t.stream == vec![0, -8, 2, 2, 1, -3]);
-}
-
-#[test]
-fn test_diff_prec() {
-    let s = Signal {
-        stream: vec![9 << 6, 0 << 6, 1 << 6, 2 << 6, 3 << 6, 3 << 6],
-        precision: 6,
-    };
-    let t = s.diff();
-    let target: Vec<i32> = vec![0, -8, 2, 2, 1, -3].iter().map(|x| x << 6).collect();
-    println!("t: {:?}, target: {:?}", t.stream, target);
-    assert!(t.stream == target);
-    assert!(t.precision == s.precision);
+    assert!(t.stream == vec![0.0, -8.0, 2.0, 2.0, 1.0, -3.0]);
 }
 
 #[test]
 fn test_sum_diff() {
     // Explicitly enveloping this with 0s at either end.
-    let s = Signal::from(vec![0, 1, 2, 3, 4, 3, 2, 1, 0, 9, 0]);
+    let s = Signal::from(vec![0.0, 1.0, 2.0, 3.0, 4.0, 3.0, 2.0, 1.0, 0.0, 9.0, 0.0]);
     let mut t = s.diff().sum();
     let mut u = s.sum().diff();
     println!("\ns:  {:?}\n+:  {:?}\n/:  {:?}\n\n/+: {:?}\n+-: {:?}", s.stream, s.sum().stream, s.diff().stream, t.stream, u.stream);
@@ -196,79 +171,55 @@ fn test_sum_diff() {
 
 #[test]
 fn test_add() {
-    let a = Signal::from(vec![1, 2, 3]);
-    let b = Signal::from(vec![4, 5, 6]);
+    let a = Signal::from(vec![1.0, 2.0, 3.0]);
+    let b = Signal::from(vec![4.0, 5.0, 6.0]);
     let c = a + b;
-    assert!(c.stream == vec![5, 7, 9]);
+    assert!(c.stream == vec![5.0, 7.0, 9.0]);
 }
 
 #[test]
 fn test_sub() {
-    let a = Signal::from(vec![4, 4, 4]);
-    let b = Signal::from(vec![1, 2, 3]);
+    let a = Signal::from(vec![4.0, 4.0, 4.0]);
+    let b = Signal::from(vec![1.0, 2.0, 3.0]);
     let c = a - b;
-    assert!(c.stream == vec![3, 2, 1]);
+    assert!(c.stream == vec![3.0, 2.0, 1.0]);
 }
 
 #[test]
 fn test_mul() {
-    let a = Signal::from(vec![0, 1, 2]);
-    let b = Signal::from(vec![3, 3, 3]);
+    let a = Signal::from(vec![0.0, 1.0, 2.0]);
+    let b = Signal::from(vec![3.0, 3.0, 3.0]);
     let c = a * b;
-    assert!(c.stream == vec![0, 3, 6]);
-}
-
-#[test]
-fn test_mul_prec() {
-    let a = Signal {
-        stream: vec![0, 1 << 2, 2 << 2],
-        precision: 2,
-    };
-    let b = Signal {
-        stream: vec![3 << 1, 3 << 1, 3 << 1],
-        precision: 1,
-    };
-    let c = a * b;
-    assert!(c.stream == vec![0, 3 << 2, 6 << 2]);
+    assert!(c.stream == vec![0.0, 3.0, 6.0]);
 }
 
 #[test]
 fn test_div() {
-    let a = Signal::from(vec![4, 4, 4]);
-    let b = Signal::from(vec![4, 2, 3]);
+    let a = Signal::from(vec![4.0, 4.0, 4.0]);
+    let b = Signal::from(vec![4.0, 2.0, 3.0]);
     let c: Signal = a / b;
-    assert!(c.stream == vec![1, 2, 1]);
-}
-
-#[test]
-fn test_div_prec() {
-    let a = Signal {
-        stream: vec![4 << 2, 4 << 2, 4 << 2, 100 << 2],
-        precision: 2,
-    };
-    let b = Signal {
-        stream: vec![4 << 1, 2 << 1, 3 << 1, 5 << 1],
-        precision: 1,
-    };
-    let c = a / b;
-    let expected: Vec<i32> = vec![1 << 2, 2 << 2, 5, 20 << 2];
-    println!("\nExpected: {:?}\nGot:      {:?}", expected, c.stream);
-    assert!(c.stream == expected);
-    assert!(c.precision == 2);
+    let r: Vec<f32> = c.stream.iter().map(|x| x.round()).collect();
+    assert!(r == vec![1.0, 2.0, 1.0]);
 }
 
 #[test]
 fn test_convolve() {
     let a = Signal {
-        stream: vec![8, 9, 10, 4, 16],
-        precision: 0,
+        stream: vec![8.0, 9.0, 10.0, 4.0, 16.0],
     };
     let b = Signal {
-        stream: vec![1 << 16],
-        precision: 16,
+        stream: vec![1.0],
     };
     let c = a.convolve(&b);
-    let expected: Vec<i32> = a.stream.iter().map(|a| a << 16).collect();
-    println!("\nExpected: {:?},\nGot:      {:?}", expected, c.stream);
-    assert!(expected == c.stream);
+    println!("\nExpected: {:?},\nGot:      {:?}", a.stream, c.stream);
+    assert!(a.stream == c.stream);
+}
+
+#[test]
+fn test_into_bitstream() {
+    let s: Signal = Signal {
+        stream: vec![0.0, 0.0, 0.8, 0.8, -0.1, 0.8, -0.6, -0.5, -0.8],
+    };
+    let r = s.into_bitstream(0.5);
+    assert!(r.stream == vec![0, 0, 1, 1, 1, 1, 0, 0, 0]);
 }
