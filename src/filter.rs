@@ -13,6 +13,7 @@ impl Kernel {
         }
     }
 
+    #[allow(dead_code)]
     pub fn unit(&self) -> Signal {
         Signal {
             stream: vec![1.0],

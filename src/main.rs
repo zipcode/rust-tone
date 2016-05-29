@@ -8,8 +8,6 @@ use nco::NCOTable;
 use signal::Signal;
 use filter::Kernel;
 
-use std::cmp::{max, min};
-
 const DETECT: f32 = 1500.0;
 const FILE: &'static str = "RTTY_170Hz_45point45-01.wav";
 
@@ -33,7 +31,7 @@ fn main() {
     let i2: Signal = i.clone() * i.clone();
     let q2: Signal = q.clone() * q.clone();
 
-    let result = ((i * qd - q * id) / (i2 + q2)).filter(&filter).scale(2.0);
+    let result = ((i * qd - q * id) / (i2 + q2)).filter(&filter);
 
     let spec = hound::WavSpec {
         channels: 1,

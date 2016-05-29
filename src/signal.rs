@@ -71,6 +71,7 @@ impl Signal {
         s
     }
 
+    #[allow(dead_code)]
     pub fn scale(self, value: f32) -> Signal {
         let res: Vec<f32> = self.stream.iter().map(|x| {
             x * value
