@@ -33,21 +33,6 @@ fn main() {
 
     let result = ((i * qd - q * id) / (i2 + q2)).filter(&filter);
 
-    let spec = hound::WavSpec {
-        channels: 1,
-        bits_per_sample: 16,
-        sample_rate: rate as u32,
-    };
-    let mut writer = match hound::WavWriter::create("sine.wav", spec) {
-        Ok(w) => w,
-        Err(_) => {
-            println!("Could not open output for writing");
-            return
-        }
-    };
-    let scale: f32 = (1 << 15) as f32 - 2.0; // Negative values only go down to this!
-    for x in result.stream {
-        let s = (if x.abs() > 1.0 { 1.0 * x.signum() } else { x }) * scale;
-        writer.write_sample(s as i16).expect("Could not write sample");
-    };
+    let bits = result.into_bitstream(0.05);
+    println!("{:?}", bits);
 }
