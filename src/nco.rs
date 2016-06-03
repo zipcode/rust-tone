@@ -3,6 +3,7 @@ use signal::Signal;
 
 // An initial oscillator table
 // This should be long-lived: it's doing all the computation up front.
+#[derive(Clone, Debug)]
 pub struct NCOTable {
     pub bits: usize,
     pub fractional: usize,
@@ -11,11 +12,17 @@ pub struct NCOTable {
 }
 
 // Here's your numerically-controlled oscillator.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct NCO<'a> {
     pub index: usize,
     pub step: usize,
     table: &'a NCOTable,
+}
+
+#[derive(Clone, Debug)]
+struct PulseTrain<'a> {
+    nco: NCO<'a>,
+    last: f32,
 }
 
 impl<'a> NCOTable {
@@ -115,6 +122,13 @@ impl<'a> NCO<'a> {
             stream: vec,
         }
     }
+
+    pub fn into_pulsetrain(self) -> PulseTrain<'a> {
+        PulseTrain {
+            nco: self,
+            last: -1.0,
+        }
+    }
 }
 
 #[test]
@@ -136,4 +150,29 @@ impl<'a> Iterator for NCO<'a> {
         self.index = (self.index + self.step) % max;
         Some(result)
     }
+}
+
+impl<'a> PulseTrain<'a> {
+    pub fn set_freq(&mut self, freq: f32) {
+        self.nco.set_freq(freq);
+    }
+}
+
+impl<'a> Iterator for PulseTrain<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        let n = self.nco.next().unwrap();
+        let result: usize = if self.last < 0.0 && n >= 0.0 { 1 } else { 0 };
+        self.last = n;
+        Some(result)
+    }
+}
+
+#[test]
+fn test_pulsetrain() {
+    let table = NCOTable::new(44100.0, 8, 2);
+    let osc = table.freq(500.0);
+    let mut pt = osc.into_pulsetrain();
+    assert!(pt.next() == Some(1), "Expected a pulse");
+    assert!(pt.next() == Some(0), "Expected no pulse");
 }

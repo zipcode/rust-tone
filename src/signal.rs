@@ -11,6 +11,13 @@ pub struct BitStream {
     pub stream: Vec<usize>,
 }
 
+#[derive(Clone,Debug)]
+pub struct BitStreamTransitionIter<'a> {
+    stream: &'a BitStream,
+    index: usize,
+    last: usize,
+}
+
 impl From<Vec<f32>> for Signal {
     fn from(v: Vec<f32>) -> Signal {
         Signal {
@@ -161,6 +168,31 @@ impl ops::Div for Signal {
         Signal {
             stream: res,
         }
+    }
+}
+
+impl<'a> BitStream {
+    pub fn iter_transitions(&'a self) -> BitStreamTransitionIter<'a> {
+        BitStreamTransitionIter {
+            last: 0,
+            index: 0,
+            stream: &self,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.stream.len()
+    }
+}
+
+impl<'a> Iterator for BitStreamTransitionIter<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        let n: usize = self.stream.stream[self.index];
+        self.index += 1;
+        let result: usize = if n != self.last { 1 } else { 0 };
+        self.last = n;
+        Some(result)
     }
 }
 

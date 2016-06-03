@@ -33,6 +33,23 @@ fn main() {
 
     let result = ((i * qd - q * id) / (i2 + q2)).filter(&filter);
 
+    let mut output: Vec<usize> = vec![];
     let bits = result.into_bitstream(0.05);
-    println!("{:?}", bits);
+    let mut transitions = bits.iter_transitions();
+    let baud = 45.45;
+    let offset = 5.0;
+    let mut clock = table.freq(baud).into_pulsetrain();
+    clock.next(); // May as well discard the first tick
+    for i in (0..bits.len()) {
+        let tstate = transitions.next().unwrap();
+        let cstate = clock.next().unwrap();
+        if cstate > 0 || tstate > 0 {
+            clock.set_freq(baud + (tstate as f32 - cstate as f32) * offset);
+        }
+        if cstate == 1 {
+            output.push(bits.stream[i]);
+        }
+    }
+    println!("{:?}", output);
+    println!("About {} chars", output.len() / 7);
 }
