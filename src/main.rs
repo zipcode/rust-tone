@@ -38,16 +38,23 @@ fn main() {
     let mut transitions = bits.iter_transitions();
     let baud = 45.45;
     let offset = 5.0;
+    let mut countdown: Option<usize> = Some((rate as f32 / baud / 2.0) as usize);
     let mut clock = table.freq(baud).into_pulsetrain();
-    clock.next(); // May as well discard the first tick
     for i in (0..bits.len()) {
         let tstate = transitions.next().unwrap();
         let cstate = clock.next().unwrap();
         if cstate > 0 || tstate > 0 {
             clock.set_freq(baud + (tstate as f32 - cstate as f32) * offset);
         }
+        // We don't want to sample at the clock edge
+        // instead we sample after half the baud
         if cstate == 1 {
+            countdown = Some((rate as f32 / baud / 2.0) as usize);
+        }
+        countdown = countdown.map(|x| x - 1);
+        if countdown == Some(0) {
             output.push(bits.stream[i]);
+            countdown = None;
         }
     }
     println!("{:?}", output);
