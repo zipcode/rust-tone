@@ -3,10 +3,12 @@ extern crate hound;
 mod filter;
 mod nco;
 mod signal;
+mod baudot;
 
 use nco::NCOTable;
 use signal::Signal;
 use filter::Kernel;
+use baudot::decode_stream;
 
 const DETECT: f32 = 1500.0;
 const FILE: &'static str = "RTTY_170Hz_45point45-01.wav";
@@ -57,6 +59,6 @@ fn main() {
             countdown = None;
         }
     }
-    println!("{:?}", output);
-    println!("About {} chars", output.len() / 7);
+    let hopes: String = decode_stream(output);
+    println!("Hopes!: {}", hopes);
 }
