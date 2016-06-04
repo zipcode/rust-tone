@@ -39,7 +39,7 @@ fn main() {
     let bits = result.into_bitstream(0.05);
     let mut transitions = bits.iter_transitions();
     let baud = 45.45;
-    let offset = 5.0;
+    let offset = 1.0;
     let mut countdown: Option<usize> = Some((rate as f32 / baud / 2.0) as usize);
     let mut clock = table.freq(baud).into_pulsetrain();
     for i in (0..bits.len()) {
