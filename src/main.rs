@@ -39,15 +39,16 @@ fn main() {
     let bits = result.into_bitstream(0.05);
     let mut transitions = bits.iter_transitions();
     let baud = 45.45;
-    let offset = 1.0;
     let mut countdown: Option<usize> = Some((rate as f32 / baud / 2.0) as usize);
     let mut clock = table.freq(baud).into_pulsetrain();
     for i in (0..bits.len()) {
         let tstate = transitions.next().unwrap();
-        let cstate = clock.next().unwrap();
-        if cstate > 0 || tstate > 0 {
-            clock.set_freq(baud + (tstate as f32 - cstate as f32) * offset);
+        if tstate == 1 {
+            // Okay, we got ourselves a hard reset point for the clock
+            clock = table.freq(baud).into_pulsetrain();
         }
+
+        let cstate = clock.next().unwrap();
         // We don't want to sample at the clock edge
         // instead we sample after half the baud
         if cstate == 1 {

@@ -152,12 +152,6 @@ impl<'a> Iterator for NCO<'a> {
     }
 }
 
-impl<'a> PulseTrain<'a> {
-    pub fn set_freq(&mut self, freq: f32) {
-        self.nco.set_freq(freq);
-    }
-}
-
 impl<'a> Iterator for PulseTrain<'a> {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
