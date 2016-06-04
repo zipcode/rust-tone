@@ -61,5 +61,5 @@ fn main() {
         }
     }
     let hopes: String = decode_stream(output);
-    println!("Hopes!: {}", hopes);
+    println!("{}", hopes);
 }
